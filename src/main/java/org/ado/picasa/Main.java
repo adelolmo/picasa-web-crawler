@@ -1,5 +1,11 @@
 package org.ado.picasa;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
@@ -12,10 +18,6 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
 /**
  * @author Andoni del Olmo
  * @since 27.02.16
@@ -24,12 +26,12 @@ public class Main {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) throws Exception {
         validateEnvironmentVariables();
 
         final FirefoxProfile profile = new FirefoxProfile();
         profile.setPreference("browser.download.folderList", 2);
-        profile.setPreference("browser.download.dir", "/tmp/picasa");
+        profile.setPreference("browser.download.dir", getDownloadDirectory());
         profile.setPreference("browser.helperApps.neverAsk.saveToDisk", "image/jpeg");
         final FirefoxDriver driver = new FirefoxDriver(profile);
 //        driver.manage().window().maximize();
@@ -53,8 +55,16 @@ public class Main {
             driver.navigate().to(href);
             TimeUnit.SECONDS.sleep(1);
 
-            downloadPhoto(driver);
+//            downloadPhoto(driver);
+//            driver.executeScript("document.getElementsByClassName('post-tag')[0].click();");
+//            driver.executeScript("document.getElementsByClassName('goog-inline-block goog-toolbar-menu-button')[2].click();");
+            driver.executeScript("document.getElementsByClassName('goog-inline-block goog-toolbar-menu-button')[2].style['display']=''");
+            driver.findElement(By.xpath("//div[@class='goog-inline-block goog-toolbar-menu-button'][3]")).click();
+            TimeUnit.MILLISECONDS.sleep(200);
+            driver.findElement(By.xpath("//div[@role='menu']")).click();
+//            driver.executeScript("document.getElementsByClassName('goog-menuitem').click()");
         }
+
 
 //        driver.navigate().to(hrefs.get(0));
 //        TimeUnit.SECONDS.sleep(1);
@@ -70,8 +80,8 @@ public class Main {
 //        downloadPhoto(driver);
 
 
-        TimeUnit.SECONDS.sleep(5);
-        driver.close();
+//        TimeUnit.SECONDS.sleep(5);
+//        driver.close();
     }
 
     private static void validateEnvironmentVariables() {
@@ -143,5 +153,11 @@ public class Main {
 
     private static WebElement getActionsDropDown(FirefoxDriver driver) {
         return driver.findElement(By.xpath("//div[@class='goog-inline-block goog-toolbar-menu-button'][not(contains(@style, 'display: none'))]"));
+    }
+
+    private static String getDownloadDirectory() throws IOException {
+        final String dir = "/tmp/picasa";
+        FileUtils.forceMkdir(new File(dir));
+        return dir;
     }
 }
