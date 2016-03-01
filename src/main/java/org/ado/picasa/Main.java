@@ -1,13 +1,5 @@
 package org.ado.picasa;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -20,6 +12,12 @@ import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.firefox.FirefoxProfile;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * @author Andoni del Olmo
@@ -53,55 +51,75 @@ public class Main {
         TimeUnit.SECONDS.sleep(2);
 
         final List<WebElement> albumLinks =
-            driver.findElements(By.xpath("//p[@class='gphoto-album-cover-title']/a"));
+                driver.findElements(By.xpath("//p[@class='gphoto-album-cover-title']/a"));
 
         if (cmd.hasOption("a")) {
-            final String albumName = cmd.getOptionValue("a");
-            System.out.println(albumName);
+            final String albumName = cmd.getOptionValue("a").trim();
+            System.out.println("Album: " + albumName);
             downloadAlbum(driver,
-                albumLinks.stream()
-                    .filter(al -> al.getText().equals(albumName))
-                    .findFirst().get()
-                    .getAttribute("href"));
+                    albumLinks.stream()
+                            .filter(al -> al.getText().equals(albumName))
+                            .findFirst().get()
+                            .getAttribute("href"));
 
         } else {
 
             final Set<String> albumHrefs =
-                albumLinks.stream()
-                    .map(a -> a.getAttribute("href"))
-                    .collect(Collectors.toSet());
+                    albumLinks.stream()
+                            .map(a -> a.getAttribute("href"))
+                            .collect(Collectors.toSet());
 
             albumHrefs.forEach(a -> downloadAlbum(driver, a));
 
         }
         System.out.println("done");
         System.out.println("end: " + new Date().toString());
-//        TimeUnit.SECONDS.sleep(60);
-//        driver.close();
+        TimeUnit.SECONDS.sleep(10);
+        driver.close();
     }
 
     private static void downloadAlbum(FirefoxDriver driver, String album) {
         try {
-            System.out.println("> " + album);
             final String albumName = getAlbumName(album);
-            System.out.println(albumName);
+            System.out.println("> album name: " + albumName + "   url: " + album);
             driver.navigate().to(album);
 
-            final List<String> hrefs = driver.findElements(By.xpath("//div[@class='goog-icon-list']//a"))
-                .stream().map(a -> a.getAttribute("href"))
-                .collect(Collectors.toList());
+            final List<String> photoHrefLinks = driver.findElements(By.xpath("//div[@class='goog-icon-list']//a"))
+                    .stream()
+                    .filter(a -> MediaType.PHOTO.equals(getMediaType(a)))
+                    .map(a -> a.getAttribute("href"))
+                    .collect(Collectors.toList());
 
-            for (String href : hrefs) {
+            for (String href : photoHrefLinks) {
                 downloadPhoto(driver, href);
+            }
+
+            driver.navigate().to(album);
+
+            final List<String> videoHrefLinks = driver.findElements(By.xpath("//div[@class='goog-icon-list']//a"))
+                    .stream()
+                    .filter(a -> MediaType.VIDEO.equals(getMediaType(a)))
+                    .map(a -> a.getAttribute("href"))
+                    .collect(Collectors.toList());
+
+            int index = 1;
+            final FileDownloader fileDownloader = new FileDownloader(driver, TMP_DIR);
+            for (String videoUrl : getVideoUrls(driver, videoHrefLinks, album)) {
+                try {
+                    final FileHandler downloadedImage = new FileHandler(fileDownloader.downloader(videoUrl, albumName + index++ + ".m4v"));
+                } catch (Exception e) {
+                    System.out.println("Error! Cannot download video '" + videoUrl + "'.");
+                    e.printStackTrace();
+                }
             }
 
             TimeUnit.SECONDS.sleep(10);
             System.out.println("moving photos to directory: " + albumName);
             final File albumDirectory = new File(TMP_DIR, albumName);
             final Collection<File> files =
-                FileUtils.listFiles(new File(TMP_DIR),
-                    TrueFileFilter.INSTANCE,
-                    TrueFileFilter.INSTANCE);
+                    FileUtils.listFiles(new File(TMP_DIR),
+                            TrueFileFilter.INSTANCE,
+                            TrueFileFilter.INSTANCE);
             for (File file : files) {
                 try {
                     FileUtils.moveFileToDirectory(file, albumDirectory, true);
@@ -115,14 +133,25 @@ public class Main {
         }
     }
 
-    private static String getAlbumName(String album) {
-        // https://picasaweb.google.com/109839990130280946393/Mix
-        // https://picasaweb.google.com/109839990130280946393/HangoutAsierDelOlmoAndoniDelOlmo?locked=true
-        if (album.contains("?")) {
-            return album.substring(album.lastIndexOf("/") + 1, album.indexOf("?"));
-        } else {
-            return album.substring(album.lastIndexOf("/") + 1);
+    private static List<String> getVideoUrls(FirefoxDriver driver, List<String> videoHrefLinks, String returnPage) {
+        final List<String> urls = new ArrayList<>();
+        for (String href : videoHrefLinks) {
+            System.out.println("downloading video: " + href);
+            try {
+                driver.navigate().to(href);
+                TimeUnit.SECONDS.sleep(1);
+
+                driver.switchTo().frame(driver.findElementByXPath("//iframe[@class='scaledimage-onscreenpane']"));
+                urls.add(driver.findElementByXPath("//video").getAttribute("src"));
+
+            } catch (Exception e) {
+                System.out.println("Cannot get video url from '" + href + "'. Skipping ...");
+                e.printStackTrace();
+            } finally {
+                driver.navigate().to(returnPage);
+            }
         }
+        return urls;
     }
 
     private static void downloadPhoto(FirefoxDriver driver, String href) {
@@ -136,12 +165,27 @@ public class Main {
             driver.findElement(By.xpath("//div[@role='menu']")).click();
         } catch (Exception e) {
             System.out.println("Cannot download photo on '" + href + "'. Skipping ...");
+            e.printStackTrace();
+
+        }
+    }
+
+    private static MediaType getMediaType(WebElement a) {
+        return a.findElement(By.xpath("div/img")).getAttribute("src").contains("m4v") ?
+                MediaType.VIDEO : MediaType.PHOTO;
+    }
+
+    private static String getAlbumName(String album) {
+        if (album.contains("?")) {
+            return album.substring(album.lastIndexOf("/") + 1, album.indexOf("?"));
+        } else {
+            return album.substring(album.lastIndexOf("/") + 1);
         }
     }
 
     private static void validateEnvironmentVariables() {
         if (StringUtils.isEmpty(System.getenv("GOOGLE_ACCOUNT"))
-            || StringUtils.isEmpty(System.getenv("GOOGLE_PASSWORD"))) {
+                || StringUtils.isEmpty(System.getenv("GOOGLE_PASSWORD"))) {
             System.out.println("Missing environment variables GOOGLE_ACCOUNT or GOOGLE_PASSWORD");
             System.exit(1);
         }
@@ -161,4 +205,7 @@ public class Main {
         }
     }
 
+    private enum MediaType {
+        PHOTO, VIDEO
+    }
 }
