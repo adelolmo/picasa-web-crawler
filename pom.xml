@@ -6,7 +6,32 @@
 
     <groupId>org.ado</groupId>
     <artifactId>picassa-crawler</artifactId>
-    <version>1.1-SNAPSHOT</version>
+    <version>1.0-SNAPSHOT</version>
+
+    <url>https://github.com/adelolmo/picasa-web-crawler</url>
+
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>adelolmo</id>
+            <name>Andoni del Olmo</name>
+            <email>andoni.delolmo@gmai.com</email>
+            <url>https://github.com/adelolmo</url>
+        </developer>
+    </developers>
+
+    <scm>
+        <url>https://github.com/adelolmo/picasa-web-crawler</url>
+        <connection>scm:git:https://github.com/adelolmo/picasa-web-crawler.git</connection>
+        <developerConnection>scm:git:https://github.com/adelolmo/picasa-web-crawler.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
 
     <dependencies>
         <dependency>
