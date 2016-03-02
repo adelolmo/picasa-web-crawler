@@ -19,8 +19,8 @@ Download the latest version from https://github.com/adelolmo/picasa-web-crawler/
     $ chmod 700 picasa
     
 Add the following environment variables
-    - GOOGLE_ACCOUNT with your email address.
-    - GOOGLE_PASSWORD with your password.
++ GOOGLE_ACCOUNT with your email address.
++ GOOGLE_PASSWORD with your password.
 
 You can do it like this:
     
