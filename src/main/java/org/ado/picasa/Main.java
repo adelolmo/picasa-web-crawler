@@ -16,13 +16,6 @@
 
 package org.ado.picasa;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
@@ -37,6 +30,14 @@ import org.openqa.selenium.firefox.FirefoxProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
 /**
  * @author Andoni del Olmo
  * @since 27.02.16
@@ -44,22 +45,28 @@ import org.slf4j.LoggerFactory;
 public class Main {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
-    private static final File OUTPUT_DIR = new File(FileUtils.getTempDirectory(), "picasa");
+    private static final File DEFAULT_OUTPUT_DIR = new File(System.getProperty("user.dir"), "albums");
 
     public static void main(String[] args) throws Exception {
         final Options options = new Options();
         options.addOption("a", true, "Album name");
         options.addOption("v", true, "Verification code");
+        options.addOption("o", true, "Albums output directory");
         final CommandLine cmd = new DefaultParser().parse(options, args);
 
         validateEnvironmentVariables();
-        FileUtils.deleteQuietly(OUTPUT_DIR);
-        FileUtils.forceMkdir(OUTPUT_DIR);
+        final File outputDirectory;
+        if (cmd.hasOption("o")) {
+            outputDirectory = new File(cmd.getOptionValue("o"));
+        } else {
+            outputDirectory = DEFAULT_OUTPUT_DIR;
+        }
+        FileUtils.forceMkdir(outputDirectory);
         long start = System.currentTimeMillis();
 
         final FirefoxProfile profile = new FirefoxProfile();
         profile.setPreference("browser.download.folderList", 2);
-        profile.setPreference("browser.download.dir", OUTPUT_DIR.getAbsolutePath());
+        profile.setPreference("browser.download.dir", outputDirectory.getAbsolutePath());
         profile.setPreference("browser.helperApps.neverAsk.saveToDisk", "image/jpeg,image/png");
         final FirefoxDriver driver = new FirefoxDriver(profile);
         loginIntoPicasa(cmd.getOptionValue("v"), driver);
@@ -68,45 +75,45 @@ public class Main {
         TimeUnit.SECONDS.sleep(2);
 
         final List<WebElement> albumLinks =
-            driver.findElements(By.xpath("//p[@class='gphoto-album-cover-title']/a"));
+                driver.findElements(By.xpath("//p[@class='gphoto-album-cover-title']/a"));
 
         if (cmd.hasOption("a")) {
             final String albumName = cmd.getOptionValue("a").trim();
             LOGGER.info("Album: {}", albumName);
             downloadAlbum(driver,
-                albumLinks.stream()
-                    .filter(al -> al.getText().equals(albumName))
-                    .findFirst().get()
-                    .getAttribute("href"));
+                    albumLinks.stream()
+                            .filter(al -> al.getText().equals(albumName))
+                            .findFirst().get()
+                            .getAttribute("href"), outputDirectory);
 
         } else {
 
             final Set<String> albumHrefs =
-                albumLinks.stream()
-                    .map(a -> a.getAttribute("href"))
-                    .collect(Collectors.toSet());
+                    albumLinks.stream()
+                            .map(a -> a.getAttribute("href"))
+                            .collect(Collectors.toSet());
 
-            albumHrefs.forEach(a -> downloadAlbum(driver, a));
+            albumHrefs.forEach(a -> downloadAlbum(driver, a, outputDirectory));
 
         }
+        TimeUnit.SECONDS.sleep(10);
         LOGGER.info("done");
         long end = System.currentTimeMillis();
         LOGGER.info("execution took {} minutes.", Math.min(TimeUnit.MILLISECONDS.toMinutes(end - start), 1));
-        TimeUnit.SECONDS.sleep(10);
         driver.close();
     }
 
-    private static void downloadAlbum(FirefoxDriver driver, String album) {
+    private static void downloadAlbum(FirefoxDriver driver, String album, File outputDir) {
         try {
             final String albumName = getAlbumName(album);
             LOGGER.info("> album name: {}  url: {}", albumName, album);
             driver.navigate().to(album);
 
             final List<String> photoHrefLinks = driver.findElements(By.xpath("//div[@class='goog-icon-list']//a"))
-                .stream()
-                .filter(a -> MediaType.PHOTO.equals(getMediaType(a)))
-                .map(a -> a.getAttribute("href"))
-                .collect(Collectors.toList());
+                    .stream()
+                    .filter(a -> MediaType.PHOTO.equals(getMediaType(a)))
+                    .map(a -> a.getAttribute("href"))
+                    .collect(Collectors.toList());
 
             for (String href : photoHrefLinks) {
                 downloadPhoto(driver, href);
@@ -115,13 +122,13 @@ public class Main {
             driver.navigate().to(album);
 
             final List<String> videoHrefLinks = driver.findElements(By.xpath("//div[@class='goog-icon-list']//a"))
-                .stream()
-                .filter(a -> MediaType.VIDEO.equals(getMediaType(a)))
-                .map(a -> a.getAttribute("href"))
-                .collect(Collectors.toList());
+                    .stream()
+                    .filter(a -> MediaType.VIDEO.equals(getMediaType(a)))
+                    .map(a -> a.getAttribute("href"))
+                    .collect(Collectors.toList());
 
             int index = 1;
-            final FileDownloader fileDownloader = new FileDownloader(driver, OUTPUT_DIR.getAbsolutePath());
+            final FileDownloader fileDownloader = new FileDownloader(driver, outputDir.getAbsolutePath());
             for (String videoUrl : getVideoUrls(driver, videoHrefLinks, album)) {
                 try {
                     new FileHandler(fileDownloader.downloader(videoUrl, albumName + index++ + ".m4v"));
@@ -132,8 +139,8 @@ public class Main {
 
             TimeUnit.SECONDS.sleep(10);
             LOGGER.info("moving photos to directory: {}", albumName);
-            final File albumDirectory = new File(OUTPUT_DIR, albumName);
-            for (File file : FileUtils.listFiles(OUTPUT_DIR, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE)) {
+            final File albumDirectory = new File(outputDir, albumName);
+            for (File file : FileUtils.listFiles(outputDir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE)) {
                 try {
                     FileUtils.moveFileToDirectory(file, albumDirectory, true);
                 } catch (IOException e) {
@@ -181,7 +188,7 @@ public class Main {
 
     private static MediaType getMediaType(WebElement a) {
         return a.findElement(By.xpath("div/img")).getAttribute("src").contains("m4v") ?
-            MediaType.VIDEO : MediaType.PHOTO;
+                MediaType.VIDEO : MediaType.PHOTO;
     }
 
     private static String getAlbumName(String album) {
@@ -194,7 +201,7 @@ public class Main {
 
     private static void validateEnvironmentVariables() {
         if (StringUtils.isEmpty(System.getenv("GOOGLE_ACCOUNT"))
-            || StringUtils.isEmpty(System.getenv("GOOGLE_PASSWORD"))) {
+                || StringUtils.isEmpty(System.getenv("GOOGLE_PASSWORD"))) {
             LOGGER.error("Missing environment variables GOOGLE_ACCOUNT or GOOGLE_PASSWORD");
             System.exit(1);
         }

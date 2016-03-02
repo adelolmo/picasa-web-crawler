@@ -21,7 +21,6 @@ import org.apache.commons.httpclient.cookie.CookiePolicy;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,71 +34,12 @@ Extracted from https://github.com/Ardesco/Ebselen
 public class FileDownloader {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FileDownloader.class);
-    private WebDriver driver;
-    private String downloadPath; // = System.getProperty("java.io.tmpdir");
+    private final WebDriver driver;
+    private final String downloadPath; // = System.getProperty("java.io.tmpdir");
 
     public FileDownloader(WebDriver driverObject, String downloadPath) {
         this.driver = driverObject;
         this.downloadPath = downloadPath;
-    }
-
-    /**
-     * Get the current location that files will be downloaded to.
-     *
-     * @return The filepath that the file will be downloaded to.
-     */
-    public String getDownloadPath() {
-        return this.downloadPath;
-    }
-
-    /**
-     * Set the path that files will be downloaded to.
-     *
-     * @param filePath The filepath that the file will be downloaded to.
-     */
-    public void setDownloadPath(String filePath) {
-        this.downloadPath = filePath;
-    }
-
-
-    /**
-     * Load in all the cookies WebDriver currently knows about so that we can mimic the browser cookie state
-     *
-     * @param seleniumCookieSet
-     * @return
-     */
-    private HttpState mimicCookieState(Set<org.openqa.selenium.Cookie> seleniumCookieSet) {
-        HttpState mimicWebDriverCookieState = new HttpState();
-        for (org.openqa.selenium.Cookie seleniumCookie : seleniumCookieSet) {
-            Cookie httpClientCookie = new Cookie(seleniumCookie.getDomain(), seleniumCookie.getName(), seleniumCookie.getValue(), seleniumCookie.getPath(), seleniumCookie.getExpiry(), seleniumCookie.isSecure());
-            mimicWebDriverCookieState.addCookie(httpClientCookie);
-        }
-        return mimicWebDriverCookieState;
-    }
-
-    /**
-     * Mimic the WebDriver host configuration
-     *
-     * @param hostURL
-     * @return
-     */
-    private HostConfiguration mimicHostConfiguration(String hostURL, int hostPort) {
-        HostConfiguration hostConfig = new HostConfiguration();
-        hostConfig.setHost(hostURL, hostPort);
-        return hostConfig;
-    }
-
-    public String fileDownloader(WebElement element) throws Exception {
-        return downloader(element, "href");
-    }
-
-    public String imageDownloader(WebElement element) throws Exception {
-        return downloader(element, "src");
-    }
-
-    public String downloader(WebElement element, String attribute) throws Exception {
-        //Assuming that getAttribute does some magic to return a fully qualified URL
-        return downloader(element.getAttribute(attribute), null);
     }
 
     public String downloader(String downloadLocation, String filename) throws Exception {
@@ -139,5 +79,20 @@ public class FileDownloader {
             getRequest.releaseConnection();
         }
         return downloadedFile.getAbsoluteFile();
+    }
+
+    private HttpState mimicCookieState(Set<org.openqa.selenium.Cookie> seleniumCookieSet) {
+        HttpState mimicWebDriverCookieState = new HttpState();
+        for (org.openqa.selenium.Cookie seleniumCookie : seleniumCookieSet) {
+            Cookie httpClientCookie = new Cookie(seleniumCookie.getDomain(), seleniumCookie.getName(), seleniumCookie.getValue(), seleniumCookie.getPath(), seleniumCookie.getExpiry(), seleniumCookie.isSecure());
+            mimicWebDriverCookieState.addCookie(httpClientCookie);
+        }
+        return mimicWebDriverCookieState;
+    }
+
+    private HostConfiguration mimicHostConfiguration(String hostURL, int hostPort) {
+        HostConfiguration hostConfig = new HostConfiguration();
+        hostConfig.setHost(hostURL, hostPort);
+        return hostConfig;
     }
 }
