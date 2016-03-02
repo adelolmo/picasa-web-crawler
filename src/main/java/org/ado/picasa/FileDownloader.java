@@ -103,7 +103,6 @@ public class FileDownloader {
     }
 
     public String downloader(String downloadLocation, String filename) throws Exception {
-        System.out.println(">> " + downloadLocation);
         if (downloadLocation.trim().equals("")) {
             throw new Exception("The element you have specified does not link to anything!");
         }
