@@ -19,7 +19,6 @@ package org.ado.picasa;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -45,7 +44,7 @@ import org.slf4j.LoggerFactory;
 public class Main {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
-    private static final String TMP_DIR = "/tmp/picasa";
+    private static final File OUTPUT_DIR = new File(FileUtils.getTempDirectory(), "picasa");
 
     public static void main(String[] args) throws Exception {
         final Options options = new Options();
@@ -54,13 +53,13 @@ public class Main {
         final CommandLine cmd = new DefaultParser().parse(options, args);
 
         validateEnvironmentVariables();
-        FileUtils.deleteQuietly(new File(TMP_DIR));
-        FileUtils.forceMkdir(new File(TMP_DIR));
+        FileUtils.deleteQuietly(OUTPUT_DIR);
+        FileUtils.forceMkdir(OUTPUT_DIR);
         long start = System.currentTimeMillis();
 
         final FirefoxProfile profile = new FirefoxProfile();
         profile.setPreference("browser.download.folderList", 2);
-        profile.setPreference("browser.download.dir", TMP_DIR);
+        profile.setPreference("browser.download.dir", OUTPUT_DIR.getAbsolutePath());
         profile.setPreference("browser.helperApps.neverAsk.saveToDisk", "image/jpeg,image/png");
         final FirefoxDriver driver = new FirefoxDriver(profile);
         loginIntoPicasa(cmd.getOptionValue("v"), driver);
@@ -122,7 +121,7 @@ public class Main {
                 .collect(Collectors.toList());
 
             int index = 1;
-            final FileDownloader fileDownloader = new FileDownloader(driver, TMP_DIR);
+            final FileDownloader fileDownloader = new FileDownloader(driver, OUTPUT_DIR.getAbsolutePath());
             for (String videoUrl : getVideoUrls(driver, videoHrefLinks, album)) {
                 try {
                     new FileHandler(fileDownloader.downloader(videoUrl, albumName + index++ + ".m4v"));
@@ -133,12 +132,8 @@ public class Main {
 
             TimeUnit.SECONDS.sleep(10);
             LOGGER.info("moving photos to directory: {}", albumName);
-            final File albumDirectory = new File(TMP_DIR, albumName);
-            final Collection<File> files =
-                FileUtils.listFiles(new File(TMP_DIR),
-                    TrueFileFilter.INSTANCE,
-                    TrueFileFilter.INSTANCE);
-            for (File file : files) {
+            final File albumDirectory = new File(OUTPUT_DIR, albumName);
+            for (File file : FileUtils.listFiles(OUTPUT_DIR, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE)) {
                 try {
                     FileUtils.moveFileToDirectory(file, albumDirectory, true);
                 } catch (IOException e) {
@@ -200,7 +195,7 @@ public class Main {
     private static void validateEnvironmentVariables() {
         if (StringUtils.isEmpty(System.getenv("GOOGLE_ACCOUNT"))
             || StringUtils.isEmpty(System.getenv("GOOGLE_PASSWORD"))) {
-            LOGGER.info("Missing environment variables GOOGLE_ACCOUNT or GOOGLE_PASSWORD");
+            LOGGER.error("Missing environment variables GOOGLE_ACCOUNT or GOOGLE_PASSWORD");
             System.exit(1);
         }
     }
