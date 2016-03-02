@@ -14,7 +14,7 @@ Crawls your Picasa web albums to download the photos & videos.
 Download the latest version from https://github.com/adelolmo/picasa-web-crawler/releases/latest
 
     $ cd $HOME
-    $ wget https://github.com/adelolmo/picasa-web-crawler/releases/download/v1.1/picasa-crawler-1.1.jar
+    $ wget https://github.com/adelolmo/picasa-web-crawler/releases/download/v1.2/picasa-crawler-1.2.jar
     $ wget https://raw.githubusercontent.com/adelolmo/picasa-web-crawler/master/picasa
     $ chmod 700 picasa
     
@@ -37,11 +37,16 @@ export GOOGLE_PASSWORD=mypassword
 
 ### Run
 
-The application supports two parameters, "a" to download an specific album and "v" to set the verification code in case that two factor authentication is enable.
-You can skip the "v" parameter if two factor authentication is not enable in your account.
-You can skip the "a" parameter If you want to download all you albums.
+The application supports three parameters, "a" to download an specific album, "v" to set the verification code in case that two factor authentication is enable
+and "o" to set the download directory.
 
-    $ ./picasa -a "My dog" -v 123456
+You can skip the "v" parameter if two factor authentication is not enable in your account.
+
+You can skip the "a" parameter if you want to download all you albums.
+
+You can skip the "o" parameter, the default directory is located in "albums" under the application directory.
+
+    $ ./picasa -a "My dog" -v 123456 -o /tmp/picasa-albums
     
 The albums are located under /tmp/picasa
 
