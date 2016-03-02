@@ -6,7 +6,7 @@
 
     <groupId>org.ado</groupId>
     <artifactId>picasa-crawler</artifactId>
-    <version>1.2-SNAPSHOT</version>
+    <version>1.3-SNAPSHOT</version>
 
     <name>Picasa Web Crawler</name>
     <description>Crawls your Picasa web albums to download the photos and videos.</description>
