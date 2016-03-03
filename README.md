@@ -2,6 +2,9 @@
 
 Crawls your Picasa web albums to download the photos & videos.
 
+It works by accessing your picasa account via Firefox and reproduces user interaction to download the photos and videos from your albums.
+
+
 ## System requirements
 
 - Java 8
@@ -36,6 +39,8 @@ export GOOGLE_PASSWORD=mypassword
     $ source ~/.bashrc   
 
 ### Run
+
+*IMPORTANT*: a Firefox window will be opened, do not close it!
 
 The application supports three parameters, "a" to download an specific album, "v" to set the verification code in case that two factor authentication is enable
 and "o" to set the download directory.
