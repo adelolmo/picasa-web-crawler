@@ -132,10 +132,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>de.jutzig</groupId>
-                <artifactId>github-release-plugin</artifactId>
-            </plugin>
         </plugins>
     </build>
 
@@ -147,6 +143,73 @@
                     <plugin>
                         <groupId>de.jutzig</groupId>
                         <artifactId>github-release-plugin</artifactId>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>deb</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <version>2.7</version>
+                        <configuration>
+                            <encoding>UTF-8</encoding>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.vafer</groupId>
+                        <artifactId>jdeb</artifactId>
+                        <version>1.4</version>
+                        <configuration>
+                            <name>picasacrawler</name>
+                            <deb>${project.build.directory}/releases/${project.build.finalName}.deb</deb>
+                            <changesOut>
+                                ${project.build.directory}/releases/${project.build.finalName}_${project.version}_all.changes
+                            </changesOut>
+                            <controlDir>${project.basedir}/src/deb/control</controlDir>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jdeb</goal>
+                                </goals>
+                                <configuration>
+                                    <dataSet>
+                                        <data>
+                                            <type>file</type>
+                                            <src>${project.build.directory}/${project.build.finalName}.jar</src>
+                                            <mapper>
+                                                <type>perm</type>
+                                                <prefix>/usr/share/${project.artifactId}/lib</prefix>
+                                                <user>loader</user>
+                                                <group>loader</group>
+                                            </mapper>
+                                        </data>
+                                        <data>
+                                            <type>link</type>
+                                            <symlink>true</symlink>
+                                            <linkName>/usr/share/${project.artifactId}/lib/${project.artifactId}.jar</linkName>
+                                            <linkTarget>/usr/share/${project.artifactId}/lib/${project.build.finalName}.jar</linkTarget>
+                                        </data>
+                                        <data>
+                                            <src>${basedir}/src/deb/usr/bin</src>
+                                            <type>directory</type>
+                                            <mapper>
+                                                <type>perm</type>
+                                                <prefix>/usr/bin</prefix>
+                                                <user>loader</user>
+                                                <group>loader</group>
+                                                <filemode>755</filemode>
+                                            </mapper>
+                                        </data>
+                                    </dataSet>
+                                </configuration>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
