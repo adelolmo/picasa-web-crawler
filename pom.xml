@@ -167,7 +167,7 @@
                             <name>picasacrawler</name>
                             <deb>${project.build.directory}/releases/${project.build.finalName}.deb</deb>
                             <changesOut>
-                                ${project.build.directory}/releases/${project.build.finalName}_${project.version}_all.changes
+                                ${project.build.directory}/releases/${project.build.finalName}_all.changes
                             </changesOut>
                             <controlDir>${project.basedir}/src/deb/control</controlDir>
                         </configuration>
