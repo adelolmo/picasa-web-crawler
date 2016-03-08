@@ -16,9 +16,7 @@
 
 package org.ado.picasa;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Options;
+import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.lang3.StringUtils;
@@ -27,8 +25,6 @@ import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.firefox.FirefoxProfile;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,15 +40,21 @@ import java.util.stream.Collectors;
  */
 public class Main {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
     private static final File DEFAULT_OUTPUT_DIR = new File(System.getProperty("user.dir"), "albums");
 
     public static void main(String[] args) throws Exception {
         final Options options = new Options();
-        options.addOption("a", true, "Album name");
-        options.addOption("v", true, "Verification code");
-        options.addOption("o", true, "Albums output directory");
+        options.addOption(new Option("a", "album", true, "Album name"));
+        options.addOption("v", "verification-code", true, "Verification code");
+        options.addOption("o", "output", true, "Albums output directory");
+        options.addOption("h", "help", false, "Prints this help");
         final CommandLine cmd = new DefaultParser().parse(options, args);
+
+        if (cmd.hasOption("help")) {
+            HelpFormatter formatter = new HelpFormatter();
+            formatter.printHelp("picasa-crawler", options);
+            System.exit(0);
+        }
 
         validateEnvironmentVariables();
         final File outputDirectory;
@@ -79,7 +81,7 @@ public class Main {
 
         if (cmd.hasOption("a")) {
             final String albumName = cmd.getOptionValue("a").trim();
-            LOGGER.info("Album: {}", albumName);
+            System.out.println(String.format("Album: %s", albumName));
             downloadAlbum(driver,
                     albumLinks.stream()
                             .filter(al -> al.getText().equals(albumName))
@@ -97,16 +99,16 @@ public class Main {
 
         }
         TimeUnit.SECONDS.sleep(10);
-        LOGGER.info("done");
+        System.out.println("done");
         long end = System.currentTimeMillis();
-        LOGGER.info("execution took {} minutes.", Math.min(TimeUnit.MILLISECONDS.toMinutes(end - start), 1));
+        System.out.println(String.format("execution took %d minutes.", Math.min(TimeUnit.MILLISECONDS.toMinutes(end - start), 1)));
         driver.close();
     }
 
     private static void downloadAlbum(FirefoxDriver driver, String album, File outputDir) {
         try {
             final String albumName = getAlbumName(album);
-            LOGGER.info("> album name: {}  url: {}", albumName, album);
+            System.out.println(String.format("> album name: %s  url: %s", albumName, album));
             driver.navigate().to(album);
 
             final List<String> photoHrefLinks = driver.findElements(By.xpath("//div[@class='goog-icon-list']//a"))
@@ -133,12 +135,13 @@ public class Main {
                 try {
                     new FileHandler(fileDownloader.downloader(videoUrl, albumName + index++ + ".m4v"));
                 } catch (Exception e) {
-                    LOGGER.error(String.format("Cannot download video '%s'.", videoUrl), e);
+                    System.err.println(String.format("Cannot download video '%s'.", videoUrl));
+                    e.printStackTrace();
                 }
             }
 
             TimeUnit.SECONDS.sleep(10);
-            LOGGER.info("moving photos to directory: {}", albumName);
+            System.out.println(String.format("moving photos to directory: %s", albumName));
             final File albumDirectory = new File(outputDir, albumName);
             for (File file : FileUtils.listFiles(outputDir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE)) {
                 try {
@@ -148,14 +151,15 @@ public class Main {
                 }
             }
         } catch (Exception e) {
-            LOGGER.error(String.format("Cannot download album '%s'", album), e);
+            System.err.println(String.format("Cannot download album '%s'", album));
+            e.printStackTrace();
         }
     }
 
     private static List<String> getVideoUrls(FirefoxDriver driver, List<String> videoHrefLinks, String returnPage) {
         final List<String> urls = new ArrayList<>();
         for (String href : videoHrefLinks) {
-            LOGGER.info("downloading video: {}", href);
+            System.out.println(String.format("downloading video: %s", href));
             try {
                 driver.navigate().to(href);
                 TimeUnit.SECONDS.sleep(1);
@@ -164,7 +168,8 @@ public class Main {
                 urls.add(driver.findElementByXPath("//video").getAttribute("src"));
 
             } catch (Exception e) {
-                LOGGER.error(String.format("Cannot get video url from '%s'. Skipping ...", href), e);
+                System.err.println(String.format("Cannot get video url from '%s'. Skipping ...", href));
+                e.printStackTrace();
             } finally {
                 driver.navigate().to(returnPage);
             }
@@ -182,7 +187,8 @@ public class Main {
             TimeUnit.MILLISECONDS.sleep(200);
             driver.findElement(By.xpath("//div[@role='menu']")).click();
         } catch (Exception e) {
-            LOGGER.error(String.format("Cannot download photo on '%s'. Skipping ...", href), e);
+            System.err.println(String.format("Cannot download photo on '%s'. Skipping ...", href));
+            e.printStackTrace();
         }
     }
 
@@ -202,7 +208,7 @@ public class Main {
     private static void validateEnvironmentVariables() {
         if (StringUtils.isEmpty(System.getenv("GOOGLE_ACCOUNT"))
                 || StringUtils.isEmpty(System.getenv("GOOGLE_PASSWORD"))) {
-            LOGGER.error("Missing environment variables GOOGLE_ACCOUNT or GOOGLE_PASSWORD");
+            System.err.println("Error. Missing environment variables GOOGLE_ACCOUNT or GOOGLE_PASSWORD.");
             System.exit(1);
         }
     }

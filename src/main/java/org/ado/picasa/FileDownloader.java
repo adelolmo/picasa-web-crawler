@@ -21,21 +21,18 @@ import org.apache.commons.httpclient.cookie.CookiePolicy;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.WebDriver;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.net.URL;
 import java.util.Set;
 
 /*
-Extracted from https://github.com/Ardesco/Ebselen
+    Extracted from https://github.com/Ardesco/Ebselen
 */
 public class FileDownloader {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(FileDownloader.class);
     private final WebDriver driver;
-    private final String downloadPath; // = System.getProperty("java.io.tmpdir");
+    private final String downloadPath;
 
     public FileDownloader(WebDriver driverObject, String downloadPath) {
         this.driver = driverObject;
@@ -60,7 +57,7 @@ public class FileDownloader {
         }
         try {
             int status = client.executeMethod(getRequest);
-            LOGGER.info("HTTP Status {} when getting '{}'", status, downloadURL.toExternalForm());
+            System.out.println(String.format("HTTP Status %d when getting '%s'", status, downloadURL.toExternalForm()));
             BufferedInputStream in = new BufferedInputStream(getRequest.getResponseBodyAsStream());
             int offset = 0;
             int len = 4096;
@@ -71,9 +68,8 @@ public class FileDownloader {
             }
             downloadedFile.close();
             in.close();
-            LOGGER.info("File downloaded to '{}'", downloadedFile.getAbsoluteFile());
-        } catch (Exception Ex) {
-            LOGGER.error("Download failed: {}", Ex);
+            System.out.println(String.format("File downloaded to '%s'", downloadedFile.getAbsoluteFile()));
+        } catch (Exception e) {
             throw new Exception("Download failed!");
         } finally {
             getRequest.releaseConnection();

@@ -3,6 +3,7 @@ Version: [[version]]
 Section: misc
 Priority: low
 Architecture: all
-Depends:
+Depends: firefox
+Suggests: oracle-java8-installer
 Description: [[description]]
 Maintainer: andoni.delolmo@gmail.com

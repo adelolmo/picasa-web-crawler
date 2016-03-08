@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.ado</groupId>
@@ -35,21 +35,15 @@
         <tag>HEAD</tag>
     </scm>
 
+    <properties>
+        <release.directory>${project.build.directory}/releases</release.directory>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.seleniumhq.selenium</groupId>
             <artifactId>selenium-java</artifactId>
             <version>2.52.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.12</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>1.7.5</version>
         </dependency>
         <dependency>
             <groupId>commons-cli</groupId>
@@ -116,9 +110,9 @@
                     </filters>
                     <transformers>
                         <transformer
-                                implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                         <transformer
-                                implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                            implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                             <mainClass>org.ado.picasa.Main</mainClass>
                         </transformer>
                     </transformers>
@@ -143,6 +137,22 @@
                     <plugin>
                         <groupId>de.jutzig</groupId>
                         <artifactId>github-release-plugin</artifactId>
+                        <configuration>
+                            <fileSets>
+                                <fileSet>
+                                    <directory>${release.directory}</directory>
+                                    <includes>
+                                        <include>*.deb</include>
+                                    </includes>
+                                </fileSet>
+                                <fileSet>
+                                    <directory>${build.directory}</directory>
+                                    <includes>
+                                        <include>${project.artifactId}-${project.version}.jar</include>
+                                    </includes>
+                                </fileSet>
+                            </fileSets>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>
@@ -164,7 +174,7 @@
                         <artifactId>jdeb</artifactId>
                         <version>1.4</version>
                         <configuration>
-                            <name>picasacrawler</name>
+                            <name>${project.artifactId}</name>
                             <deb>${project.build.directory}/releases/${project.build.finalName}.deb</deb>
                             <changesOut>
                                 ${project.build.directory}/releases/${project.build.finalName}_all.changes
@@ -192,8 +202,11 @@
                                         <data>
                                             <type>link</type>
                                             <symlink>true</symlink>
-                                            <linkName>/usr/share/${project.artifactId}/lib/${project.artifactId}.jar</linkName>
-                                            <linkTarget>/usr/share/${project.artifactId}/lib/${project.build.finalName}.jar</linkTarget>
+                                            <linkName>/usr/share/${project.artifactId}/lib/${project.artifactId}.jar
+                                            </linkName>
+                                            <linkTarget>
+                                                /usr/share/${project.artifactId}/lib/${project.build.finalName}.jar
+                                            </linkTarget>
                                         </data>
                                         <data>
                                             <src>${basedir}/src/deb/usr/bin</src>
