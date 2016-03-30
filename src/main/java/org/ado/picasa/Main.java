@@ -18,7 +18,6 @@ package org.ado.picasa;
 
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
@@ -143,7 +142,7 @@ public class Main {
             TimeUnit.SECONDS.sleep(10);
             System.out.println(String.format("moving photos to directory: %s", albumName));
             final File albumDirectory = new File(outputDir, albumName);
-            for (File file : FileUtils.listFiles(outputDir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE)) {
+            for (File file : FileUtils.listFiles(outputDir, null, false)) {
                 try {
                     FileUtils.moveFileToDirectory(file, albumDirectory, true);
                 } catch (IOException e) {
