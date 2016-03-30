@@ -146,7 +146,7 @@
                                     </includes>
                                 </fileSet>
                                 <fileSet>
-                                    <directory>${build.directory}</directory>
+                                    <directory>${project.build.directory}</directory>
                                     <includes>
                                         <include>${project.artifactId}-${project.version}.jar</include>
                                     </includes>
